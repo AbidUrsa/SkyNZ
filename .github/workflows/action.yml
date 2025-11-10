@@ -1,0 +1,46 @@
+name: Update Playlist M3U Files
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Code ko checkout karen
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Recommended latest stable version
+
+      - name: 3. Install dependencies
+        run: echo "No external dependencies to install."
+      
+      - name: Fetch JS Script 
+        run: |
+          curl -L -o skynz.js ${{ secrets.SKYNZ_SCRIPT }}
+          node skynz.js
+
+      - name: Changes ko commit karen
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git remote set-url origin https://${{ secrets.GITHUB_TOKEN }}@github.com/AbidUrsa/SkyNZ.git
+
+      - name: Commit and push changes
+        run: |
+          git add skynz.m3u
+          git fetch origin main
+          git reset --soft origin/main
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Fetch m3u8 latest data"
+            git push origin main
+          fi
